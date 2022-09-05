@@ -87,8 +87,8 @@
                     </div>
                 </div>
             </div>
-            <div :class="'responseMessage'+responseMessage[0]" >
-                {{responseMessage[1]}}
+            <div :class="'responseMessage'+responseMessage[0] + ' text-center mt-3'" >
+                <span>{{responseMessage[1]}}</span>
             </div>
         </div>
     </MainLayout>

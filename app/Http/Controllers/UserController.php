@@ -68,9 +68,11 @@ class UserController extends Controller{
     
     /* Retrieve user details for use on risk calculator */
     public function showRiskCalculatorSettings(){
-        $user = User::where('username', Auth::user()->username)->first();
+        $userId = Auth::id();
+        $user = User::find($userId);
+        $portfolioSize = $user->portfolio_size;
         $currentPortfolioSize = TradesController::getCurrentPortfolioSize();
-        if(!empty($user) || $currentPortfolioSize !== -1){
+        if(!empty($user) && $portfolioSize >= 0){
             return[
                 "success" => true,
                 "response" => ["riskcalculator", ['user' => $user, 'currentPortfolioSize' => $currentPortfolioSize]]

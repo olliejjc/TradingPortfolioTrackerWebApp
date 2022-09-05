@@ -41,7 +41,7 @@ export default{
             return responseMessage;
     },
     generateListOfTradeYears: async() => {
-        let listOfTradeYears = {}
+        let listOfTradeYears = []
         await apiClient.get(API_BASE + "/home")
             .then(response => response.data)
             .then(data => {
@@ -53,7 +53,7 @@ export default{
                 }
             })
             .catch(err => {
-                console.log(err.response.status);
+                console.log(err);
             });
         return listOfTradeYears;
     },
@@ -151,7 +151,7 @@ export default{
                 }
             })
             .catch(err => {
-                console.log(err.response.status);
+                console.log(err);
             });
         return tradeHistory;
     },
@@ -164,11 +164,11 @@ export default{
                     tradeDataWithMatchingDate = data.response;
                 }
                 else{
-                    throw data.response.error;
+                    throw data.response;
                 }
             })
             .catch(err => {
-                console.log(err.response.status);
+                console.log(err);
             });
         return tradeDataWithMatchingDate;
     },

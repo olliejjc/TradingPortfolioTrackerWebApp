@@ -5,7 +5,8 @@
                 <div class="row">
                     <div class="col-lg-4">
                         <h2 class="mt-4">Dashboard</h2>
-                        <select class="form-control mt-4" id="selectPortfolioView" data-width="120px" v-model="selectedPortfolioView" @change="changePortfolioView($event)">
+                        <select v-if="listOfTradeYears.length !== 0 && loaded === true" class="form-control mt-4" id="selectPortfolioView" data-width="120px" 
+                                v-model="selectedPortfolioView" @change="changePortfolioView($event)">
                             <option id="portfolioChartView" selected="selected" :value="0"><h2 class="mt-4">Portfolio Performance</h2></option>
                             <option id="portfolioHoldingsView" :value="1"><h2 class="mt-4">Portfolio Holdings</h2></option>
                         </select>
@@ -13,7 +14,7 @@
                     <div class="col-lg-8"></div>
                 </div>
             </div>
-            <div class="h-75 container-fluid" id="dashboardBodyContainer">
+            <div v-show="listOfTradeYears.length !== 0 && loaded === true" class="h-75 container-fluid" id="dashboardBodyContainer">
                 <div class="row mt-5">
                     <div v-show="selectedPortfolioView === 0" id="timePeriodSelectContainer" class="col-lg-2">
                         <select class="form-control" id="selecttimeperiod" data-width="120px" v-model="selectedTimePeriod" @change="changeSelectedTimePeriod($event)">
@@ -58,6 +59,13 @@
                     </h2>
                 </div>
             </div>
+            <div v-if="loaded===false" class="h-75 container-fluid" id="dashboardBodyContainer">
+                <h1 class="mt-4">Loading....</h1>
+            </div>
+            <div v-if="loaded===true && listOfTradeYears.length === 0 " class="h-75 container-fluid" id="dashboardBodyContainer">
+                <h3 class="mt-4">No Trades Stored In Trading Portfolio Tracker</h3>
+                <h3 class="mt-4">Trades must be added to the app to show performance over time</h3>
+            </div>
         </main>
         <footer class="py-4 bg-light mt-auto">
             <div class="container-fluid">
@@ -79,18 +87,22 @@ import Chart from 'chart.js/auto';
 export default {
   components: {PanelLayout},
   setup(){
-    const listOfTradeYears = ref({});
+    const listOfTradeYears = ref([]);
     let selectedYear = ref();
     let selectedTimePeriod = ref("Yearly View");
     let selectedPortfolioView = ref(0);
     let tradesOpened = ref(-1);
     let tradesOpenedList = ref([]);
+    const loaded = ref(false);
 
 
     onMounted(async () => {
         listOfTradeYears.value = await APIController.generateListOfTradeYears();
-        selectedYear.value = listOfTradeYears.value[0];
-        generatePortfolioChart(selectedTimePeriod.value, selectedYear.value);
+        if(listOfTradeYears.value.length !== 0){
+            selectedYear.value = listOfTradeYears.value[0];
+            generatePortfolioChart(selectedTimePeriod.value, selectedYear.value);
+        }
+        loaded.value = true;
     });
 
     const changeSelectedTimePeriod = (event) => {
@@ -290,7 +302,7 @@ export default {
         return yearsWithTradesStringArray;
     }
     
-    return { listOfTradeYears, selectedTimePeriod, selectedYear, changeSelectedTimePeriod, selectedPortfolioView, changePortfolioView, tradesOpenedList, tradesOpened}
+    return {loaded, listOfTradeYears, selectedTimePeriod, selectedYear, changeSelectedTimePeriod, selectedPortfolioView, changePortfolioView, tradesOpenedList, tradesOpened}
   }
 }
 </script>

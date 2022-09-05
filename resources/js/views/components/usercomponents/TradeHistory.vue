@@ -5,7 +5,7 @@
             <div class="container-fluid">
                 <h1 class="mt-4">Trade History</h1>
             </div>
-            <div class="h-75 container-fluid">
+            <div v-if="loaded===true && userTradeHistory.listOfTradeYears != null" class="h-75 container-fluid">
                 <div class="row mt-5">
                     <div class="col-lg-2">
                         <select class="form-control" id="selectmonth" v-model="selectedDates.selectedMonth" @change="changeSelectedMonth($event)" data-width="120px">
@@ -152,6 +152,13 @@
                 </div>
                 <!-- @endif -->
             </div>
+            <div v-if="loaded===false" class="h-75 container-fluid">
+                <h1 class="mt-4">Loading....</h1>
+            </div>
+            <div v-if="loaded===true && userTradeHistory.listOfTradeYears == null" class="h-75 container-fluid">
+                <h3 class="mt-4">No Trades Stored In Trading Portfolio Tracker</h3>
+                <h3 class="mt-4">Trades must be added to the app to show trade history</h3>
+            </div>
         </main>
         <ScreenshotViewModal @tradeNoScreenshots="removeScreenshotSymbol" @closeViewModal="setViewModalClosed" :tradeid="tradeIdSelected" :viewModalOpen="openViewModalStatus"/>
         <ScreenshotUploadModal @tradeNewScreenshots="addScreenshotSymbol" @closeUploadModal="setUploadModalClosed" :tradeid="tradeIdSelected" :uploadModalOpen="openUploadModalStatus"/>
@@ -192,6 +199,7 @@ export default {
         const tradeIdSelected = ref(-1);
         const openViewModalStatus = ref(false);
         const openUploadModalStatus = ref(false);
+        const loaded = ref(false);
 
         onMounted(async () => {
            let tradeHistory = await APIController.generateTradeHistory();
@@ -201,7 +209,10 @@ export default {
            userTradeHistory.value.reportYear = tradeHistory.tradeYear;
            userTradeHistory.value.monthlyBalance = tradeHistory.monthlyBalance;
            userTradeHistory.value.monthlyProfitLoss = tradeHistory.monthlyProfitLoss;
-           let latestYear = userTradeHistory.value.listOfTradeYears[userTradeHistory.value.listOfTradeYears.length-1];
+           if(userTradeHistory.value.listOfTradeYears != null){
+            let latestYear = userTradeHistory.value.listOfTradeYears[userTradeHistory.value.listOfTradeYears.length-1];
+           }
+           loaded.value = true;
         });
 
         const changeSelectedMonth = (event) => {
@@ -218,9 +229,18 @@ export default {
             /* Gets all trades that match a specific month and year */
         const getTradesWithDateMatchingSelected = async() => {
             let tradeDataForMatchingDate = await APIController.getTradeDataForSelectedDate(selectedDates.value);
-            userTradeHistory.value.trades = tradeDataForMatchingDate.tradesWithMatchingDate;
-            userTradeHistory.value.monthlyBalance = tradeDataForMatchingDate.monthlyBalance;
-            userTradeHistory.value.monthlyProfitLoss = tradeDataForMatchingDate.monthlyProfitLoss;
+            console.log(tradeDataForMatchingDate);
+            if (tradeDataForMatchingDate !== undefined && tradeDataForMatchingDate.length !== 0) {
+                console.log("here");
+                userTradeHistory.value.trades = tradeDataForMatchingDate.tradesWithMatchingDate;
+                userTradeHistory.value.monthlyBalance = tradeDataForMatchingDate.monthlyBalance;
+                userTradeHistory.value.monthlyProfitLoss = tradeDataForMatchingDate.monthlyProfitLoss;
+            }
+            else{
+                console.log(userTradeHistory.value);
+                userTradeHistory.value.listOfTradeYears = [];
+                userTradeHistory.value.trades = [];
+            }
         }
 
         const closeTrade = async(trade) => {
@@ -264,7 +284,7 @@ export default {
         }
 
 
-        return {responseMessage, userTradeHistory, selectedDates, tradeIdSelected, openViewModalStatus, openUploadModalStatus, removeScreenshotSymbol, addScreenshotSymbol, 
+        return {loaded, responseMessage, userTradeHistory, selectedDates, tradeIdSelected, openViewModalStatus, openUploadModalStatus, removeScreenshotSymbol, addScreenshotSymbol, 
             closeTrade, deleteTrade, changeSelectedMonth, changeSelectedYear, openViewModal, openUploadModal, setViewModalClosed, setUploadModalClosed}
     }
 }

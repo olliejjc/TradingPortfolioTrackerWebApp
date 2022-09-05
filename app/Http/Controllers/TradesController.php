@@ -539,25 +539,33 @@ class TradesController extends Controller{
     public function getTradeDataForSelectedDate(Request $request){
         $monthSelected = $request->selectedMonth;
         $yearSelected = $request->selectedYear;
-        if($yearSelected === -1){
-            $yearSelected = TradesController::getListOfTradeYears()[0];
-        }
-        if($monthSelected === "Month"){
-            $trades = array();
-            $trades = TradesController::getTradesByLatestMonth();
-            if(!empty($trades)){
-                $monthSelected = TradesController::getTradeMonth($trades[0]);
+        if(count(TradesController::getListOfTradeYears()) !== 0){
+            if($yearSelected === -1){
+                $yearSelected = TradesController::getListOfTradeYears()[0];
             }
+            if($monthSelected === "Month"){
+                $trades = array();
+                $trades = TradesController::getTradesByLatestMonth();
+                if(!empty($trades)){
+                    $monthSelected = TradesController::getTradeMonth($trades[0]);
+                }
+            }
+
+            $tradesWithMatchingDate = TradesController::getTradesBySelectedDate($monthSelected, $yearSelected);
+            $monthlyBalance = TradesController::getMonthlyBalance($monthSelected, $yearSelected);
+            $monthlyProfitLoss = TradesController::getMonthlyProfitLoss($monthSelected, $yearSelected);
+
+            return[
+                "success" => true,
+                "response" => ["tradesWithMatchingDate" => $tradesWithMatchingDate, "monthlyBalance" => $monthlyBalance, "monthlyProfitLoss" => $monthlyProfitLoss]
+            ];
         }
-
-        $tradesWithMatchingDate = TradesController::getTradesBySelectedDate($monthSelected, $yearSelected);
-        $monthlyBalance = TradesController::getMonthlyBalance($monthSelected, $yearSelected);
-        $monthlyProfitLoss = TradesController::getMonthlyProfitLoss($monthSelected, $yearSelected);
-
-        return[
-            "success" => true,
-            "response" => ["tradesWithMatchingDate" => $tradesWithMatchingDate, "monthlyBalance" => $monthlyBalance, "monthlyProfitLoss" => $monthlyProfitLoss]
-        ];
+        else{
+            return[
+                "success" => false,
+                "response" => "No trades exist"
+            ];
+        }
         //return json_encode($tradesAndDateData);
     }
 
@@ -571,7 +579,10 @@ class TradesController extends Controller{
             return $monthlyBalance;
         }
         else{
-            return -1;
+            $userId = Auth::id();
+            $user = User::find($userId);
+            $portfolioSize = $user->portfolio_size;
+            return $portfolioSize;
         }
     }
 
