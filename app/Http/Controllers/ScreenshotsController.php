@@ -6,84 +6,50 @@ use Illuminate\Http\Request;
 use App\Models\Trade;
 use App\Models\User;
 use App\Models\Screenshot;
-use Auth;
-use Illuminate\Support\Facades\Log;
+use App\Services\ScreenshotsService;
+use Illuminate\Support\Facades\Auth;
 
 class ScreenshotsController extends Controller
 {
+    protected $screenshotsService;
 
-    public function store(Request $req){
-        $images = $req->file('screenshots');
+    public function __construct(ScreenshotsService $screenshotsService){
+        $this->screenshotsService = $screenshotsService;
+    }
+
+    public function store(Request $request){
+        $images = $request->file('screenshots');
         $userId = Auth::id();
         $user = User::find($userId);
-        $trade = Trade::findOrFail($req->tradeId);
+        $trade = Trade::findOrFail($request->tradeId);
         /* Multiple screenshots uploaded*/
-        if(is_array($images)){
-            $trade->has_screenshots = true;
-            $trade->save();
-            $user->trades()->save($trade);
-            foreach($images as $key => $image){
-                $name=$image->getClientOriginalName();
-                $screenshot = new Screenshot();
-                $screenshot->save();
-                $screenshotNameWithId = str_replace(".png", "_" . $screenshot->id, $name);
-                $screenshotFileName =  $screenshotNameWithId . ".png";
-                $screenshot -> screenshot_image = $screenshotFileName;
-                $screenshot->save();
-                $image->move('screenshots', $screenshotFileName);
-                $trade->existingScreenshots()->save($screenshot);
+        if (is_array($images)) {
+            if (count($images) > 1) {
+                $trade->has_screenshots = true;
+                foreach ($images as $key => $image) {
+                    $screenshot = $this->screenshotsService->createScreenshot($image);
+                    $trade->existingScreenshots()->save($screenshot);
+                }
+                $response = ["screenshots" => $images];
             }
-
-            return[
-                "success" => true,
-                "response" => ["screenshots" => $images]
-            ];
-            
-        }
-        /* One screenshot uploaded*/
-        else{
-            $trade->has_screenshots = true;
-            $trade->save();
-            $user->trades()->save($trade);
-            $oneImage = $images;
-            $name=$oneImage->getClientOriginalName();
-            $screenshot = new Screenshot();
-            $screenshot->save();
-            $screenshotNameWithId = str_replace(".png", "_" . $screenshot->id, $name);
-            $screenshotFileName =  $screenshotNameWithId . ".png";
-            $screenshot -> screenshot_image = $screenshotFileName;
-            $screenshot->save();
-            $image->move('screenshots', $screenshotFileName);
-            $trade->existingScreenshots()->save($screenshot);
-
-            return[
-                "success" => true,
-                "response" => ["screenshots" => $oneImage]
-            ];
+            else if(count($images) === 1){
+                $trade->has_screenshots = true;
+                $oneImage = $images[0];
+                $screenshot = $this->screenshotsService->createScreenshot($oneImage);
+                $trade->existingScreenshots()->save($screenshot);
+                $response = ["screenshots" => $images];
+            }
         }
         $trade->save();
         $user->trades()->save($trade);
-    }
-
-    public static function getScreenshotsByTrade($tradeID){
-        $screenshotPathData = array();
-        $screenshots = Screenshot::where('trade_id', $tradeID)->get();
-        if(!is_null($screenshots)){
-            return[
-                "success" => true,
-                "response" => ["screenshots" => $screenshots]
-            ];
-        }
-        else{
-            return[
-                "success" => false,
-                "response" => ["error" => "No screenshots are available for this trade"]
-            ];
-        }
+        return [
+            "success" => true,
+            "response" => $response
+        ];
     }
 
     public function delete($activeScreenshotPath){
-        $id = ScreenShotsController::parsePathForID($activeScreenshotPath, "_", ".png");
+        $id = $this -> screenshotsService -> parsePathForID($activeScreenshotPath, "_", ".png");
         $screenshot = Screenshot::findOrFail($id);
         $tradeID = $screenshot -> trade_id;
         if(!is_null($activeScreenshotPath) && !empty($activeScreenshotPath)){
@@ -111,12 +77,19 @@ class ScreenshotsController extends Controller
         }
     }
 
-    public function parsePathForID($string, $start, $end){
-        $string = ' ' . $string;
-        $ini = strrpos($string, $start);
-        if ($ini == 0) return '';
-        $ini += strlen($start);
-        $len = strpos($string, $end, $ini) - $ini;
-        return substr($string, $ini, $len);
+    public function retrieveScreenshotsByTrade($tradeId){
+        $screenshots = $this -> screenshotsService -> getScreenshotsByTrade($tradeId);
+        if(!is_null($screenshots)){
+            return[
+                "success" => true,
+                "response" => ["screenshots" => $screenshots]
+            ];
+        }
+        else{
+            return[
+                "success" => false,
+                "response" => ["error" => "No screenshots are available for this trade"]
+            ];
+        }
     }
 }

@@ -229,9 +229,7 @@ export default {
             /* Gets all trades that match a specific month and year */
         const getTradesWithDateMatchingSelected = async() => {
             let tradeDataForMatchingDate = await APIController.getTradeDataForSelectedDate(selectedDates.value);
-            console.log(tradeDataForMatchingDate);
             if (tradeDataForMatchingDate !== undefined && tradeDataForMatchingDate.length !== 0) {
-                console.log("here");
                 userTradeHistory.value.trades = tradeDataForMatchingDate.tradesWithMatchingDate;
                 userTradeHistory.value.monthlyBalance = tradeDataForMatchingDate.monthlyBalance;
                 userTradeHistory.value.monthlyProfitLoss = tradeDataForMatchingDate.monthlyProfitLoss;
@@ -254,7 +252,12 @@ export default {
 
         const deleteTrade = async(id) => {
             responseMessage.value = await APIController.deleteTrade(id);
-            getTradesWithDateMatchingSelected();
+            await getTradesWithDateMatchingSelected();
+            const date = new Date(userTradeHistory.value.trades[0].date_trade_opened);  // 2009-11-10
+            const month = date.toLocaleString('default', { month: 'long' });
+            const year = date.getFullYear();
+            userTradeHistory.value.reportMonth = month;
+            userTradeHistory.value.reportYear = year;
         }
 
         const openViewModal = (id) => {

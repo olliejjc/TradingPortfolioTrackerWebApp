@@ -2,42 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\UserStoreRequest;
+use App\Http\Requests\UserUpdateRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\TradesController;
-use Illuminate\Validation\Rules;
 
 class UserController extends Controller{
 
-    public function showAuthenticatedUser(){
-        $userId = Auth::id();
-        $user = User::find($userId);
-        if(empty($user)){
+    public static function show($username){
+        $user = User::where('username', $username)->first();
+        if(!empty($user)){
             return[
-                "success" => false,
-                "response" => ["error" => "No user found"]
+                "success" => true,
+                "response" => ["user" => $user]
             ];
         }
-
-        return[
-            "success" => true,
-            "response" => ["user" => $user]
-        ];
+        else{
+            return[
+                "success" => false,
+                "response" => "Authorized user does not exist"
+            ];
+        }
     }
 
-    public function store(Request $request)
-    {
-        //return $request;
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', Rules\Password::defaults()],
-            'passwordConfirm' => 'required|same:password',
-        ]);
-
+    public function store(UserStoreRequest $request){
         $user = User::create([
             'name' => $request->name,
             'username' => $request->username,
@@ -58,32 +46,44 @@ class UserController extends Controller{
                 "response" => ["user" => $user]
             ];
         }
-
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        return redirect(RouteServiceProvider::HOME);
     }
-    
-    /* Retrieve user details for use on risk calculator */
-    public function showRiskCalculatorSettings(){
-        $userId = Auth::id();
-        $user = User::find($userId);
-        $portfolioSize = $user->portfolio_size;
-        $currentPortfolioSize = TradesController::getCurrentPortfolioSize();
-        if(!empty($user) && $portfolioSize >= 0){
+
+    public function update(UserUpdateRequest $request){
+        $id = Auth::id();
+        $user = User::where('id', $id)->first();
+        if(!empty($user)){
+            $user -> portfolio_size = $request->input('portfolio_size');
+            $user -> risk_percentage_per_trade = $request->input('risk_percentage_per_trade');
+            $user -> binance_apikey = $request->input('binance_apikey');
+            $user -> binance_secretkey = $request->input('binance_secretkey');
+            $user -> save();
             return[
                 "success" => true,
-                "response" => ["riskcalculator", ['user' => $user, 'currentPortfolioSize' => $currentPortfolioSize]]
+                "response" => ["user" => $user]
             ];
         }
         else{
             return[
                 "success" => false,
-                "response" => ["error" => "Authorised user does not exist or portfolio value is an invalid number"]
+                "response" => "Authorized user does not exist or could not be updated"
             ];
         }
+    }
+
+    public function showAuthenticatedUser(){
+        $userId = Auth::id();
+        $user = User::find($userId);
+        if(empty($user)){
+            return[
+                "success" => false,
+                "response" => ["error" => "No user found"]
+            ];
+        }
+
+        return[
+            "success" => true,
+            "response" => ["user" => $user]
+        ];
     }
 
     public function showUserSettings(){
@@ -99,48 +99,6 @@ class UserController extends Controller{
             return[
                 "success" => false,
                 "response" => ["error" => "Authorized user does not exist"]
-            ];
-        }
-    }
-
-    public function update(Request $req){
-        $id = Auth::id();
-        $user = User::where('id', $id)->first();
-        if(!empty($user)){
-            $validatedData = $req->validate([
-                'portfolio_size' => 'required|numeric|min:0|max:100000000',
-                'risk_percentage_per_trade' => 'required|numeric|min:0.00|max:100.00',
-            ]);
-            $user -> portfolio_size = $req->input('portfolio_size');
-            $user -> risk_percentage_per_trade = $req->input('risk_percentage_per_trade');
-            $user -> binance_apikey = $req->input('binance_apikey');
-            $user -> binance_secretkey = $req->input('binance_secretkey');
-            $user -> save();
-            return[
-                "success" => true,
-                "response" => ["user" => $user]
-            ];
-        }
-        else{
-            return[
-                "success" => false,
-                "response" => "Authorized user does not exist or could not be updated"
-            ];
-        }
-    }
-
-    public static function show($username){
-        $user = User::where('username', $username)->first();
-        if(!empty($user)){
-            return[
-                "success" => true,
-                "response" => ["user" => $user]
-            ];
-        }
-        else{
-            return[
-                "success" => false,
-                "response" => "Authorized user does not exist"
             ];
         }
     }

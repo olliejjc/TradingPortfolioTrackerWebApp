@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use App\Services\UserService;
+use App\Services\TradeService;
+use App\Http\Requests\CalculateRequest;
 
 class RiskCalculatorController extends Controller{
     /* Calculates the shares to purchase, the dollar size of your position, and the dollar amount you're risking for your trade */
-    public function calculate(Request $req){
+    protected $userService;
+
+    public function __construct(UserService $userService){
+        $this->userService = $userService;
+    }
+
+    public function calculate(CalculateRequest $req){
         $portfolioSizeString = str_replace("$", "", $req->input('portfolio_size'));
         $portfolioSize = floatval($portfolioSizeString);
         $req->merge(array('portfolio_size' => $portfolioSize));
-        $validatedData = $req->validate([
-            'portfolio_size' => 'required|gt:0',
-            'entry_price' => 'required|numeric|min:0|max:1000000',
-            'stop_loss' => 'required|numeric|min:0|max:1000000',
-        ]);
         $riskPercentagePerTradeString = str_replace("%", "", $req->input('risk_percentage_per_trade'));
         $riskPercentagePerTrade = floatval($riskPercentagePerTradeString)/100;
         $entryPrice = floatval($req->input('entry_price'));
@@ -30,5 +34,25 @@ class RiskCalculatorController extends Controller{
             "response" => ["calculatedResults" => $calculateResults]
         ];
         // return json_encode($calculateResults);
+    }
+
+    /* Retrieve user details for use on risk calculator */
+    public function showRiskCalculatorSettings(){
+        $userId = Auth::id();
+        $user = User::find($userId);
+        $portfolioSize = $user->portfolio_size;
+        $currentPortfolioSize = $this->userService->getUserPortfolioSize();
+        if(!empty($user) && $portfolioSize >= 0){
+            return[
+                "success" => true,
+                "response" => ["riskcalculator", ['user' => $user, 'currentPortfolioSize' => $currentPortfolioSize]]
+            ];
+        }
+        else{
+            return[
+                "success" => false,
+                "response" => ["error" => "Authorised user does not exist or portfolio value is an invalid number"]
+            ];
+        }
     }
 }

@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Services\TradeService;
 
-class HomeController extends Controller
-{
+class HomeController extends Controller{
+    protected $tradeService;
+
+    public function __construct(TradeService $tradeService){
+        $this->tradeService = $tradeService;
+    }
+
     /*Generates the list of years that have trade history */
     public function generateListOfTradeYears(){
-        $listOfTradeYears = TradesController::getListOfTradeYears();
+        $listOfTradeYears = $this -> tradeService -> getListOfTradeYears();
         if (count($listOfTradeYears) <= 0) {
             return[
                 "success" => false,

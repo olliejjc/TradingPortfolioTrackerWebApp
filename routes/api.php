@@ -1,8 +1,6 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LivePortfolioController;
 use App\Http\Controllers\RiskCalculatorController;
@@ -25,15 +23,11 @@ use App\Http\Controllers\UserController;
 //     Route::get('/', 'HomeController@index')->name('home');
 // });
 
-Route::post('/register', [UserController::class, 'store']);
-
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
     Route::get('/home', [HomeController::class, 'generateListOfTradeYears']);
 });
-    
-Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::get('/riskcalculator', [UserController::class, 'showRiskCalculatorSettings']);
-});
+
+Route::post('/register', [UserController::class, 'store']);
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
     Route::get('/settings', [UserController::class, 'showUserSettings']);
@@ -55,6 +49,10 @@ Route::middleware(['auth', 'role:Admin,User'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
+    Route::delete('/deletetrades/{id}', [TradesController::class, 'delete']);
+});
+
+Route::middleware(['auth', 'role:Admin,User'])->group(function () {
     Route::get('/tradehistory', [TradesController::class, 'generateTradeHistory']);
 });
 
@@ -67,11 +65,11 @@ Route::middleware(['auth', 'role:Admin,User'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::get('/tradeYearsWithTrades', [TradesController::class, 'getListOfTradeYears']);
+    Route::get('/tradeYearsWithTrades', [TradesController::class, 'retrieveListOfTradeYears']);
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::post('/newtrades', [TradesController::class, 'addNewTrade']);
+    Route::post('/newtrades', [TradesController::class, 'store']);
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
@@ -83,15 +81,11 @@ Route::middleware(['auth', 'role:Admin,User'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::delete('/deletetrades/{id}', [TradesController::class, 'delete']);
-});
-
-Route::middleware(['auth', 'role:Admin,User'])->group(function () {
     Route::post('/calculate', [RiskCalculatorController::class, 'calculate']);
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::get('/tradescreenshots/{id}', [ScreenshotsController::class, 'getScreenshotsByTrade']);
+    Route::get('/riskcalculator', [RiskCalculatorController::class, 'showRiskCalculatorSettings']);
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
@@ -103,5 +97,9 @@ Route::middleware(['auth', 'role:Admin,User'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:Admin,User'])->group(function () {
-    Route::get('/liveportfolio', [LivePortfolioController::class, 'index']);
+    Route::get('/tradescreenshots/{id}', [ScreenshotsController::class, 'retrieveScreenshotsByTrade']);
+});
+
+Route::middleware(['auth', 'role:Admin,User'])->group(function () {
+    Route::get('/liveportfolio', [LivePortfolioController::class, 'getBinanceAccountData']);
 });

@@ -91,7 +91,7 @@ export default {
     let selectedYear = ref();
     let selectedTimePeriod = ref("Yearly View");
     let selectedPortfolioView = ref(0);
-    let tradesOpened = ref(-1);
+    let tradesOpened = ref(false);
     let tradesOpenedList = ref([]);
     const loaded = ref(false);
 
